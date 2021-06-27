@@ -1,0 +1,283 @@
+---
+title: "Marvel Comics Characters Combat Analysis"
+author: "Group_26"
+date: "2021/6/23"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries,echo = FALSE ,message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(moderndive)
+library(gapminder)
+library(skimr)
+library(tidyverse)
+library(kableExtra)
+library(gridExtra)
+library(corrplot)
+```
+
+
+```{r data, echo = FALSE, eval = TRUE}
+marvel <- read.csv('C:/Users/lc1998/Desktop/marvel(2).csv')
+marvel <- marvel[-c(1,12,13)] #delete extra columns
+marvel <- na.omit(marvel)   #delete NA
+```
+
+# Introduction {#sec:Intro}
+Marvel Comics has created many classic characters, how to evaluate the combat effectiveness of these super heroes? This poster will display graphical and numerical summaries to the heroes characteristic data, investigating the relationship between heroes combat and their basic features.
+
+# Basic Analysis {#sec:Basic}
+
+## Data processing
+
++ Variables explanation  
+  
+  Gender(binary variable): female, male and unknown *-explanatory variable*  
+Height, weight: hero physical features *-explanatory variable*  
+Intelligence, strength,	speed	Durability,	power: hero abilities *-explanatory variable*  
+Combat: hero fighting force *-outcome variable*
+
++ Missing and abnormal data procedure  
+  
+  For the missing value, the character is excepted from analysis.  
+For the abnormal data, e.g. some unknown gender heroes or some heroes with negative value height and weight,e.g.-99, they are all remained in this analysis due to the particularity of the Marvel heroes, maybe they are not 3D characters or from some specific ethnics.
+
++ Data standardization  
+  
+
+## Numerical and graphical Summaries
+
++ Outcome varibale summaries 
+
+```{r combat numerical summary,echo=FALSE}
+marvel%>%
+  summarise(n=n(),Mean=round(mean(Combat),digits=1), 
+    St.Dev=round(sd(Combat),digits=1), Min=min(Combat), 
+    Q1 = quantile(Combat,0.25), Median=median(Combat), 
+    Q3 = quantile(Combat,0.75), Max=max(Combat)) %>%
+ kable(caption = '\\label{tab:summaries} Summary statistics on the combat') %>%
+ kable_styling(font_size = 10, latex_options = "hold_position")
+```
+
+```{r boxplot, echo = FALSE, out.width='50%',fig.align="center",fig.cap = "\\label{fig:box} boxplot of combat."}
+boxplot(marvel$Combat)
+```
+Combining the summary statistics and the boxplot, the combat values are most between 10 to 70 with mean 47.5 and median 56.
+
++ Explanatory variables summaries
+```{r boxplot1,echo = FALSE, out.width='50%',fig.align="center"}
+par(mfrow=c(1,2)) 
+boxplot(marvel$Height,main="Height",col=6)
+boxplot(marvel$Weight,main="Weight",col=7)
+par(mfrow=c(1,1)) 
+marvel_ability<-marvel%>%
+  select(Intelligence:Power)
+boxplot(marvel_ability,col=c(2:6))
+```
+
+
++ Top2 most powerful heroes ( star plot )
+
+```{r starplot, echo=FALSE, out.width='80%',fig.align="center"}
+#Star plot
+marvel.Star <- read.csv('C:/Users/lc1998/Desktop/marvel(2).csv')
+marvel.Star.Names <- marvel.Star[,-c(1,3)] %>%
+  filter(Combat==101 | Combat==100) %>%
+  select(Name)
+marvel.Star.Mtrix <- marvel.Star[,-c(1,2,3)] %>%
+  filter(Combat==101 | Combat==100) %>%
+  as.matrix()# as.numeric()#101 & 100 data
+rownames(marvel.Star.Mtrix) <- marvel.Star.Names[,1]
+stars(marvel.Star.Mtrix,draw.segments = T,full = F,key.loc=c(8.5,1.5))
+```
+Here is the star plot for the Ares who has the highest combat value 101, and 13 heroes who have comabt value 100. The star plot displays these 14 heroes abilities directly. It can be seen clearly that the Ares is an omnipotent hero.
+
+
++ Correlation plot
+```{r visualisation, echo=FALSE, eval=TRUE, out.width='80%',fig.align="center"}
+
+cor <- cor(marvel[,-c(1,2)])
+corrplot(corr = cor , method ='number' ,type='upper',order='hclust') #cor matrix
+
+```
+
+ From the correlation plot, we can see that intelligence, durability and power have most significance positive correlations with combat, 0.76,0.68 and 0.66 respectively. Moreover, it is reasonable to consider the multicollinearity because of the high positive correlations between the explanatory variables. Thus, all the variables will be used in the original model to create the full model and explore the confidence intervals of the parameters.
+
+# Model Investigation
+
+Firstly, build linear model as following,  
+*Combat ~ Gender + Height + Weight + Intelligence + Strength + Speed + Durability + Power*
+
+```{r simple linear model, include=FALSE, message=FALSE}
+model<- lm(Combat ~ Gender + Height + Weight + Intelligence + Strength + Speed + 
+           Durability+ Power, data = marvel)
+summary(model)
+sigma(model)/mean(marvel$Combat) # RSE
+```
+
+```{r stepwise regression,include=FALSE, message=FALSE}
+
+library(knitr)
+library(olsrr)
+library(GGally)
+
+step(model)
+
+```
+From the stepwise regression method for model selection, the original model has dropped 3 predictors after using AIC criteria. Only height, weight, intelligence, speed and durability are remained in the model. Then use the p-value to do further model selection.
+
+```{r p-value,include=FALSE, include=FALSE}
+#reduced model
+marvel.step <- lm(formula = Combat ~ Height + Weight + Intelligence + Speed + 
+                    Durability, data = marvel)
+summary(marvel.step)
+
+#drop 'Speed' based on p-value
+model2 <- lm(formula = Combat ~ Height + Weight + Intelligence + 
+               Durability, data = marvel)
+summary(model2)
+
+#drop 'Weight' based on p-value
+model3 <- lm(formula = Combat ~ Height + Intelligence + 
+               Durability, data = marvel)
+summary(model3)
+
+```
+In this selection procedure, repeat dropping the least significance(i.e. p-value is greater than the criteria) parameter then summary the new model. Finally we got the model as following
+*Combat ~ Height + Intelligence + Durability*  
+Here we end up with a model with three variables: height, intelligence and durability. And $R^2$ value is 63.8%.
+
+
+```{r outliers judgment, include=FALSE}
+cook <- cooks.distance(model3)
+n <- length(cook)
+glimpse(cook)
+model3_data <- marvel %>%
+  select(Height, Intelligence, Durability, Combat) %>%
+  mutate('cook_distance' = cook) %>%
+  filter(cook_distance <= 4/n)
+```
+
+```{r final model analysis, include=FALSE}
+model4 <- lm(formula = Combat ~ Height + Intelligence + 
+               Durability, data = model3_data)
+summary(model4)
+confint(model4)
+```
+
+|               |   2.5%            | 97.5%        
+|:-------------:|:-----------------:|:------------:          
+|  Intercept    |  -0.32331428      | 7.11571729
+|  Height       |   0.01954045      | 0.05947712       
+|  Intelligence |   0.59593999      | 0.79513552  
+|  Durability   |   0.04516964      | 0.214194344       
+
+
+```{r,echo=FALSE}
+par(mfrow=c(2,2)) 
+plot(model4) 
+
+```
+
+```{r confidence interval,echo=FALSE,out.width='70%',fig.align="center"}
+ggcoef(model4,vline_color = "red",
+       vline_linetype = "solid",
+       errorbar_color = "blue",
+       errorbar_height = .25, exclude_intercept = TRUE)
+```
+
+
++ From the Residuals vs Fitted plot, the residuals randomly scattered around the zero line without significant pattern, so it is plausible to make assumption that the residuals are normally distributed with mean zero and constant variance.  
++ The normal Q-Q plot shows that the points follow the straight line very well suggesting that it is reasonable to assume the errors are normally distributed.  
++ The Scale-Location plot displays that the points are randomly distributed around the red line, and the red line does not show an obvious trend, so the variance assumption is plausible.  
++ Cook's distance plot show there are some outliers might influence the model. So here we rebuild the model excluded these 19 outliers.
+
+```{r based on AIC, include=FALSE}
+
+model.selection <- ols_step_both_aic(model,details = TRUE)
+summary(model.selection$model)
+model.selection[c("predictors","method","aic","rss","arsq","steps")]
+```
+
+
+```{r base on p value, include=FALSE}
+
+model.selection_p <- ols_step_both_p(model,details = TRUE, pent=0.05,prem = 0.05)
+summary(model.selection_p$model)
+model.selection_p[c("predictors","method","aic","rss","arsq","steps")]
+```
+
+Finally combining the forward and backward model selection method, the final models are the same.
+
+
+# Further Task {#sec:Fur}
+
+Is there any difference between females combat and males combat? We will investigate this question by boxplot and hypothesis test.
+
+```{r male data,include=FALSE}
+
+marvel.Male <- marvel %>%
+  filter(Gender=='Male')%>%
+  select(Combat) %>%
+  as.matrix() %>%
+  as.numeric()
+
+```
+
+```{r female data,include=FALSE}
+marvel.Female <- marvel %>%
+  filter(Gender=='Female') %>%
+  select(Combat) %>%
+  as.matrix() %>%
+  as.numeric()
+
+```
+
+```{r numerical summary, include=FALSE}
+summary(marvel.Male)
+summary(marvel.Female)
+```
+
+```{r summary statistics, echo=FALSE, eval=TRUE}
+marvel %>%
+  group_by(Gender) %>%
+  summarise(n=n(),Mean=round(mean(Combat),digits=1),St.Dev=round(sd(Combat),digits=1),
+            Min=min(Combat), Q1 = quantile(Combat,0.25), Median=median(Combat),
+            Q3 = quantile(Combat,0.75), Max=max(Combat)) %>%
+  kable(caption = '\\label{tab:summaries} Summary statistics on combat by gender of super heroes') %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+```{r boxplots,echo=FALSE, out.width='70%',fig.align="center"}
+
+ggplot(data = marvel, mapping = aes(x = Gender, y = Combat)) +
+  geom_boxplot(fill = "steelblue") +
+  labs(x = "Gender", y = "Combat",
+        title = "The Combat Effectiveness of Super Heroes in Marvel by Gender")
+
+```
+From the boxplot, the median of the unknown gender heroes is nearly zero, and the IQR range is between 0 and 45 approximately. The female heroes combat IQR covers a largest range, from 1 to 70with median 53. And the male heroes seem have stronger ability performance, IQR range is 28 to 80 with median 58.
+
+Then we use a non parametric hypothesis test to investigate the difference between the female combat and male combat.
+```{r hypothesis test,echo=TRUE}
+#Mann-Whitney U Test (Wilcoxon Rank Sum Test)
+wilcox.test(marvel.Male,marvel.Female,alternative = "greater", mu=0)
+
+```
+
+The results in R provided a p-value of 0.009957 and since this is < 0.05 we reject $H_0$. Therefore, there is evidence that the preferred mean combat of male heroes is greater than female mean combat.
+
+# Summary {#sec:Sum}
+
+The final model is *Combat ~ Height + Intelligence + Durability*.The $R^2$ is 63.8%, it is already quite good for a simple linear model here, because the realistic data always have complex relationships between the explanatory variables. But if considering the multicollinearity, the model might be improved a lot, so maybe a general linear model is more suitable for the realistic data research.
+
+
+
+
