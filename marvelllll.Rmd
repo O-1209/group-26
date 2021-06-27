@@ -56,6 +56,18 @@ For the abnormal data, e.g. some unknown gender heroes or some heroes with negat
 
 + Outcome varibale summaries 
 
+```{r summary1, echo=TRUE, eval=TRUE}
+my_skim <- skim_with(base = sfl(n = length))
+marvel[,-c(1,2)]%>%
+  my_skim() %>%
+  transmute(Variable=skim_variable, n=n, Mean=numeric.mean, SD=numeric.sd,
+            Min=numeric.p0, Median=numeric.p50,  Max=numeric.p100, 
+            IQR = numeric.p75-numeric.p50) %>%
+  knitr::kable(caption = '\\label{tab:summary} Summary Statistics.',
+               booktabs = TRUE, linesep = "",digits = 2) %>%
+  kable_styling(font_size = 10, latex_options = "hold_position")
+```
+
 ```{r combat numerical summary,echo=FALSE}
 marvel%>%
   summarise(n=n(),Mean=round(mean(Combat),digits=1), 
