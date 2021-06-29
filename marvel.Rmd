@@ -134,7 +134,7 @@ corrplot(corr = cor , method ='circle' ,type='upper',order='hclust') #cor matrix
 # Model Investigation
 
 Firstly, build linear model as following,  
-*Combat ~ Gender + Height + Weight + Intelligence + Strength + Speed + Durability + Power*
+$Y_{Combat} = \alpha + \beta_{1} * X_{Gender} + \beta_{2} * X_{Height} + \beta_{3} * X_{Weight} + \beta_{3} * X_{Intelligence} + \beta_{4} * X_{Strength} + \beta_{5} * X_{Speed} + \beta_{6} * X_{Durability} + \beta_{7} * X_{Power}$
 
 ```{r simple linear model, include=FALSE, message=FALSE}
 model<- lm(Combat ~ Gender + Height + Weight + Intelligence + Strength + Speed + 
