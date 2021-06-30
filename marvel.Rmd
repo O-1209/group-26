@@ -191,7 +191,7 @@ confint(model4)
 |  Intelligence |   0.59593999      | 0.79513552  
 |  Durability   |   0.04516964      | 0.214194344       
 
-```{r,echo=FALSE}
+```{r,echo=FALSE,fig.align="center"}
 par(mfrow=c(2,2)) 
 plot(model4) 
 ```
