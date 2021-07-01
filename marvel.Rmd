@@ -1,6 +1,4 @@
 ---
-title: "zz"
----
 title: "Marvel Comics Characters Combat Analysis"
 author: "Group_26"
 date: "2021/6/23"
@@ -13,7 +11,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r libraries,echo = FALSE ,message=FALSE}
+```{r libraries,echo = FALSE ,include=FALSE, message=FALSE}
 library(ggplot2)
 library(dplyr)
 library(moderndive)
@@ -67,7 +65,7 @@ marvel%>%
 ```{r boxplot, echo = FALSE, out.width='50%',fig.align="center",fig.cap = "\\label{fig:box} boxplot of combat."}
 boxplot(marvel$Combat, main="Combat", ylab = "Score" )
 ```
-Combining the summary statistics and the boxplot, the combat values are most between 10 and 70 with mean 47.5 and median 56.
+  Combining the summary statistics and the boxplot, the combat values are most between 10 and 70 with mean 47.5 and median 56.
 
 + Explanatory variables summaries
 
@@ -119,32 +117,44 @@ corrplot(corr = cor , method ='number' ,type='upper',order='hclust') #cor matrix
 
 ```{r visualisation2, echo=FALSE, eval=FALSE}
 cor <- cor(marvel[,-c(1,2)])
-corrplot(corr = cor , method ='circle' ,type='upper',order='hclust') #cor matrix, this plot is same as the 
+corrplot(corr = cor , method ='circle' ,type='upper',order='hclust') #cor matrix, this plot is used into poster.
 ```
 
  From the correlation plot, we can see that intelligence, durability and power have most significance positive correlations with combat, 0.76,0.68 and 0.66 respectively. Moreover, it is reasonable to consider the multicollinearity because of the high positive correlations between the explanatory variables. Thus, all the variables will be used in the original model to create the full model and explore the confidence intervals of the parameters.
 
 # Model Investigation
 
-Firstly, build linear model as following,  
-$Y_{Combat} = \alpha + \beta_{1} * X_{Gender} + \beta_{2} * X_{Height} + \beta_{3} * X_{Weight} + \beta_{3} * X_{Intelligence} + \beta_{4} * X_{Strength} + \beta_{5} * X_{Speed} + \beta_{6} * X_{Durability} + \beta_{7} * X_{Power}$
+## Building an initial linear regression model
 
-```{r simple linear model, include=FALSE, message=FALSE}
+Firstly, we build a linear model as following,  
+
+$Y_{Combat} = \alpha + \beta_{1} * X_{Gender} + \beta_{2} * X_{Height} + \beta_{3} * X_{Weight} + \beta_{3} * X_{Intelligence} + \beta_{4} * X_{Strength} + \beta_{5} * X_{Speed} + \beta_{6} * X_{Durability} + \beta_{7} * X_{Power} + \epsilon$
+
+```{r simple linear model, echo = FALSE}
 model<- lm(Combat ~ Gender + Height + Weight + Intelligence + Strength + Speed + 
            Durability+ Power, data = marvel)
-summary(model)
-sigma(model)/mean(marvel$Combat) # RSE
+get_regression_table(model, print = TRUE)
 ```
+
+From the regression table, we noticed that half of the parameters in the full model are not significant due to the multicollinearity, thus the stepwise regression is used to address this problem. 
+
+## Stepwise regression 
+
+The following is the stepwise regession, which is used to select variables 
 
 ```{r stepwise regression,include=FALSE, message=FALSE}
 library(knitr)
 library(olsrr)
 library(GGally)
 
-step(model)
+backwardmodel.1 <- step(model,method = "backward")   #using the backward method
 ```
 
-From the stepwise regression method for model selection, the original model has dropped 3 predictors after using AIC criteria. Only height, weight, intelligence, speed and durability are remained in the model. Then use the p-value to do further model selection.
+```{r backforwardmodel, echo = TRUE}
+get_regression_table(backwardmodel.1, print = TRUE)
+```
+
+  From the stepwise regression method for model selection, the original model has dropped 3 predictors after using AIC criteria. Only height, weight, intelligence, speed and durability are remained in the model. Then we use the p-value to do further model selection.
 
 ```{r p-value,include=FALSE, include=FALSE}
 #reduced model
@@ -152,7 +162,7 @@ marvel.step <- lm(formula = Combat ~ Height + Weight + Intelligence + Speed +
                     Durability, data = marvel)
 summary(marvel.step)
 
-#drop 'Speed' based on p-value
+#drop 'Speed' variable based on p-value
 model2 <- lm(formula = Combat ~ Height + Weight + Intelligence + 
                Durability, data = marvel)
 summary(model2)
@@ -163,10 +173,19 @@ model3 <- lm(formula = Combat ~ Height + Intelligence +
 summary(model3)
 ```
 
-In this selection procedure, repeat dropping the least significance(i.e. p-value is greater than the criteria) parameter then summary the new model. Finally we got the model as following  
-$Y_{Combat}=\alpha+ \beta_1* X_{Height}+\beta_2* X_{Intelligence}+\beta_3* X_{Durability}$  
-Here we end up with a model with three variables: height, intelligence and durability. And $R^2$ value is 63.8%.
+  This selection procedure is to repeat dropping the non significance variable (i.e. p-value is greater than 0.05) one by one, then generate a new model. Finally we got the model as following.
 
+$Y_{Combat}=\alpha+ \beta_1* X_{Height}+\beta_2* X_{Intelligence}+\beta_3* X_{Durability}$  
+
+```{r final.result}
+get_regression_table(model3, print = TRUE)
+```
+
+  Here we end up with a model with three variables: height, intelligence and durability. And $R^2$ value is 63.8% in the new model, which indicates that the new model is a plausible fit.
+
+## Checking assumption
+
++ Checking the influencial point
 ```{r outliers judgment, include=FALSE}
 cook <- cooks.distance(model3)
 n <- length(cook)
@@ -177,6 +196,7 @@ model3_data <- marvel %>%
   filter(cook_distance <= 4/n)
 ```
 
++ Checking model assumption
 ```{r final model analysis, include=FALSE}
 model4 <- lm(formula = Combat ~ Height + Intelligence + 
                Durability, data = model3_data)
@@ -184,18 +204,11 @@ summary(model4)
 confint(model4)
 ```
 
-|               |   2.5%            | 97.5%        
-|:-------------:|:-----------------:|:------------:          
-|  Intercept    |  -0.32331428      | 7.11571729
-|  Height       |   0.01954045      | 0.05947712       
-|  Intelligence |   0.59593999      | 0.79513552  
-|  Durability   |   0.04516964      | 0.214194344       
-
 ```{r,echo=FALSE,fig.align="center"}
 par(mfrow=c(2,2)) 
 plot(model4) 
 ```
-
++ Checking point estimation
 ```{r confidence interval,echo=FALSE,out.width='70%',fig.align="center"}
 ggcoef(model4,vline_color = "red",
        vline_linetype = "solid",
@@ -203,10 +216,22 @@ ggcoef(model4,vline_color = "red",
        errorbar_height = .25, exclude_intercept = TRUE)
 ```
 
+|               |   2.5%            | 97.5%        
+|:-------------:|:-----------------:|:------------:          
+|  Intercept    |  -0.32331428      | 7.11571729
+|  Height       |   0.01954045      | 0.05947712       
+|  Intelligence |   0.59593999      | 0.79513552  
+|  Durability   |   0.04516964      | 0.214194344    
+
+
 + From the Residuals vs Fitted plot, the residuals randomly scattered around the zero line without significant pattern, so it is plausible to make assumption that the residuals are normally distributed with mean zero and constant variance.  
 + The normal Q-Q plot shows that the points follow the straight line very well suggesting that it is reasonable to assume the errors are normally distributed.  
 + The Scale-Location plot displays that the points are randomly distributed around the red line, and the red line does not show an obvious trend, so the variance assumption is plausible.  
 + Cook's distance plot show there are some outliers might influence the model. So here we rebuild the model excluded these 19 outliers.
+
+## Model checking using other method of stepwise selection 
+
+  In the above disscussion, we use the backward stepwise regression to select the virables. Now we use another method of stepwise regresstion, which is combining forward and backward selection, to check whether the model from backward is the same as the model from combining forward and backward selection.
 
 ```{r based on AIC, include=FALSE}
 model.selection <- ols_step_both_aic(model,details = TRUE)
@@ -220,12 +245,12 @@ summary(model.selection_p$model)
 model.selection_p[c("predictors","method","aic","rss","arsq","steps")]
 ```
 
-Finally combining the forward and backward model selection method, the final models are the same.
+  Finally combining the forward and backward model selection method, the final models are the same.
 
 
 # Further Task {#sec:Fur}
 
-Is there any difference between females combat and males combat? We will investigate this question by boxplot and hypothesis test.
+  Is there any difference between females combat and males combat? We will investigate this question by boxplot and hypothesis test.
 
 ```{r male data,include=FALSE}
 marvel.Male <- marvel %>%
@@ -265,20 +290,26 @@ ggplot(data = marvel, mapping = aes(x = Gender, y = Combat)) +
         title = "The Combat Effectiveness of Super Heroes in Marvel by Gender")
 ```
 
-From the boxplot, the median of the unknown gender heroes is nearly zero, and the IQR range is between 0 and 45 approximately. The female heroes combat IQR covers a largest range, from 1 to 70with median 53. And the male heroes seem have stronger ability performance, IQR range is 28 to 80 with median 58.
+  From the boxplot, the median of the unknown gender heroes is nearly zero, and the IQR range is between 0 and 45 approximately. The female heroes combat IQR covers a largest range, from 1 to 70 with median 53. And the male heroes seem have stronger ability performance, IQR range is 28 to 80 with median 58.
 
-Then we use a non parametric hypothesis test to investigate the difference between the female combat and male combat.
+  Then we use a non parametric hypothesis test to investigate the difference between the female combat and male combat.
 
 ```{r hypothesis test,echo=TRUE}
 #Mann-Whitney U Test (Wilcoxon Rank Sum Test)
 wilcox.test(marvel.Male,marvel.Female,alternative = "greater", mu=0)
 ```
 
-The results in R provided a p-value of 0.009957 and since this is < 0.05 we reject $H_0$. Therefore, there is evidence that the preferred mean combat of male heroes is greater than female mean combat.
+  The results in R provided a p-value of 0.009957 and since this is < 0.05 we reject $H_0$. Therefore, there is evidence that the preferred mean combat of male heroes is greater than female mean combat.
 
 # Summary {#sec:Sum}
 
-The final model is$Y_{Combat}=\alpha+ \beta_1* X_{Height}+\beta_2* X_{Intelligence}+\beta_3* X_{Durability}$.The $R^2$ is 63.8%, it is already quite good for a simple linear model here, because the realistic data always have complex relationships between the explanatory variables. But if considering the multicollinearity, the model might be improved a lot, so maybe a general linear model is more suitable for the realistic data research.
+  The final model is$Y_{Combat}=3.396 + 0.040* X_{Height}+0.696* X_{Intelligence}+0.130* X_{Durability} + \epsilon$. That means there are three statistical significant charactisitcs of hero (height, intelligence and durability), and these variables are a positive impact on the combat power. To be specific, when increasing one unit of Height value will increase the combat power of the hero by 0.04. When increasing one unit of Intelligence score will lead to increase the combat power of the hero by 0.696 and one unit of Durability score will cause increase by 0.13 of combat score. In Addition, The $R^2$ is 63.8%, it is already quite plausible to build a simple linear model here, 
+
+
+
+because the realistic data always have complex relationships between the explanatory variables. But if considering the multicollinearity, the model might be improved a lot, so maybe a general linear model is more suitable for the realistic data research.
+
+
 
 
 
