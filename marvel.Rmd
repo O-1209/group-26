@@ -24,7 +24,7 @@ library(corrplot)
 ```
 
 ```{r data, echo = FALSE, eval = TRUE}
-marvel <- read.csv('/Users/zhaozeyu/Documents/R programm code/data analysis skill/marvel.csv')
+marvel <- read.csv('C:/Users/lc1998/Desktop/marvel(2).csv')
 marvel <- marvel[-c(1,12,13)] #delete extra columns
 marvel <- na.omit(marvel)   #delete NA
 ```
@@ -37,11 +37,14 @@ Marvel Comics have created many classic characters, how to evaluate the combat e
 ## Data processing
 
 + Variables explanation  
-  
-  Gender(binary variable): female, male and unknown(as some of the heroes are not humanity) *-explanatory variable*  
-Height, weight: hero physical features *-explanatory variable*  
-Intelligence, strength,	speed	Durability,	power: hero abilities *-explanatory variable*  
-Combat: hero fighting force *-outcome variable*
+
+  **-Explanatory variable**  
+Gender(binary variable): female, male and unknown(as some of the heroes are not humanity)  
+Height, weight: hero physical features   
+Intelligence, strength,	speed, durability, power: hero abilities  
+
+  **-Outcome variable**  
+Combat: hero fighting force  
 
 + Missing and abnormal data procedure  
   
@@ -95,7 +98,7 @@ boxplot(marvel_ability,col=c(2:6), ylab = "Score")
 
 ```{r starplot, echo=FALSE, out.width='80%',fig.align="center"}
 #Star plot
-marvel.Star <- read.csv('/Users/zhaozeyu/Documents/R programm code/data analysis skill/marvel.csv')
+marvel.Star <- read.csv('C:/Users/lc1998/Desktop/marvel(2).csv')
 marvel.Star.Names <- marvel.Star[,-c(1,3)] %>%
   filter(Combat==101 | Combat==100) %>%
   select(Name)
@@ -120,7 +123,7 @@ cor <- cor(marvel[,-c(1,2)])
 corrplot(corr = cor , method ='circle' ,type='upper',order='hclust') #cor matrix, this plot is used into poster.
 ```
 
- From the correlation plot, we can see that intelligence, durability and power have most significance positive correlations with combat, 0.76,0.68 and 0.66 respectively. Moreover, it is reasonable to consider the multicollinearity because of the high positive correlations between the explanatory variables. Thus, all the variables will be used in the original model to create the full model and explore the confidence intervals of the parameters.
+ From the correlation plot, 7 explanatory variables have a strong relationship with response variables, thus a linear regression model will be build and explore the confidence intervals of the parameters. Also, there is another problem which is found from the correlation. we can see that intelligence, durability and power have the most significance positive correlations with combat, 0.76, 0.68 and 0.66 respectively. Thus, it is reasonable to consider the multicollinearity because of the strong positive correlations between the explanatory variables.
 
 # Model Investigation
 
@@ -128,21 +131,24 @@ corrplot(corr = cor , method ='circle' ,type='upper',order='hclust') #cor matrix
 
 Firstly, we build a linear model as following,  
 
-$Y_{Combat} = \alpha + \beta_{1} * X_{Gender} + \beta_{2} * X_{Height} + \beta_{3} * X_{Weight} + \beta_{3} * X_{Intelligence} + \beta_{4} * X_{Strength} + \beta_{5} * X_{Speed} + \beta_{6} * X_{Durability} + \beta_{7} * X_{Power} + \epsilon$
+$Y_{Combat} = \alpha + \beta_{1} * X_{Gender} + \beta_{2} * X_{Height} + \beta_{3} * X_{Weight} + \beta_{4} * X_{Intelligence} + \beta_{5} * X_{Strength} + \beta_{6} * X_{Speed} + \beta_{7} * X_{Durability} + \beta_{8} * X_{Power} + \epsilon$
 
-```{r simple linear model, echo = FALSE}
+
+```{r simple linear model, echo = FALSE, warning=FALSE}
 model<- lm(Combat ~ Gender + Height + Weight + Intelligence + Strength + Speed + 
            Durability+ Power, data = marvel)
 get_regression_table(model, print = TRUE)
 ```
+  
+From the regression table, we noticed that half of the parameters in the full model are not
 
-From the regression table, we noticed that half of the parameters in the full model are not significant due to the multicollinearity, thus the stepwise regression is used to address this problem. 
+significant due to the multicollinearity, thus the stepwise regression is used to address this problem. 
 
 ## Stepwise regression 
 
 The following is the stepwise regession, which is used to select variables 
 
-```{r stepwise regression,include=FALSE, message=FALSE}
+```{r stepwise regression,include=FALSE, message=FALSE, warning=FALSE}
 library(knitr)
 library(olsrr)
 library(GGally)
@@ -150,13 +156,13 @@ library(GGally)
 backwardmodel.1 <- step(model,method = "backward")   #using the backward method
 ```
 
-```{r backforwardmodel, echo = TRUE}
+```{r backforwardmodel, echo=FALSE,warning=FALSE}
 get_regression_table(backwardmodel.1, print = TRUE)
 ```
 
   From the stepwise regression method for model selection, the original model has dropped 3 predictors after using AIC criteria. Only height, weight, intelligence, speed and durability are remained in the model. Then we use the p-value to do further model selection.
 
-```{r p-value,include=FALSE, include=FALSE}
+```{r p-value,include=FALSE}
 #reduced model
 marvel.step <- lm(formula = Combat ~ Height + Weight + Intelligence + Speed + 
                     Durability, data = marvel)
@@ -177,7 +183,7 @@ summary(model3)
 
 $Y_{Combat}=\alpha+ \beta_1* X_{Height}+\beta_2* X_{Intelligence}+\beta_3* X_{Durability}$  
 
-```{r final.result}
+```{r final.result, echo=FALSE}
 get_regression_table(model3, print = TRUE)
 ```
 
@@ -185,32 +191,53 @@ get_regression_table(model3, print = TRUE)
 
 ## Checking assumption
 
-+ Checking the influencial point
-```{r outliers judgment, include=FALSE}
-cook <- cooks.distance(model3)
++ Checking the influential point
+
+```{r outliers judgment, echo=FALSE, out.width='80%',fig.align="center"}
+par(mfrow=c(2,2)) 
+plot(model3)
+cook<-cooks.distance(model3)
 n <- length(cook)
-glimpse(cook)
 model3_data <- marvel %>%
   select(Height, Intelligence, Durability, Combat) %>%
   mutate('cook_distance' = cook) %>%
   filter(cook_distance <= 4/n)
 ```
+From the fourth figure of the model check above, we discover that there are some influential points (Abnormalities of Cook's value), so we delete these influential observations from the original data set.Then, we will refit the data in the model excluding some dependent variables to estimate the parameters of the model. 
 
 + Checking model assumption
-```{r final model analysis, include=FALSE}
+```{r final model analysis step1, include=FALSE}
 model4 <- lm(formula = Combat ~ Height + Intelligence + 
                Durability, data = model3_data)
 summary(model4)
-confint(model4)
 ```
 
-```{r,echo=FALSE,fig.align="center"}
+```{r,echo=FALSE,fig.align="center",out.width='80%'}
 par(mfrow=c(2,2)) 
 plot(model4) 
 ```
+
+1. From the Residuals vs Fitted plot, the residuals randomly scattered around the zero line without significant pattern, so it is plausible to make assumption that the residuals are normally distributed with mean zero and constant variance.  
+2. The normal Q-Q plot shows that the points follow the straight line very well suggesting that it is reasonable to assume the errors are normally distributed.  
+3. The Scale-Location plot displays that the points are randomly distributed around the red line, and the red line does not show an obvious trend, so the variance assumption is plausible.  
+4. The cook's distance plot shows that there are not obvious outliers that might influence the regression model.  
+
+```{r final.result1, echo=FALSE}
+get_regression_table(model4, print = TRUE)
+```
+
+However,it can be seen that in the new model the p-value of the intercept is 0.07337, which is greater than 0.05, so we will exclude the intercept and refit the model.
+
 + Checking point estimation
+
+```{r final model analysis step2, include=FALSE}
+model5 <- lm(formula = Combat ~ Height + Intelligence + Durability-1, data = model3_data)
+summary(model5)
+confint(model5)
+```
+
 ```{r confidence interval,echo=FALSE,out.width='70%',fig.align="center"}
-ggcoef(model4,vline_color = "red",
+ggcoef(model5,vline_color = "red",
        vline_linetype = "solid",
        errorbar_color = "blue",
        errorbar_height = .25, exclude_intercept = TRUE)
@@ -218,20 +245,22 @@ ggcoef(model4,vline_color = "red",
 
 |               |   2.5%            | 97.5%        
 |:-------------:|:-----------------:|:------------:          
-|  Intercept    |  -0.32331428      | 7.11571729
-|  Height       |   0.01954045      | 0.05947712       
-|  Intelligence |   0.59593999      | 0.79513552  
-|  Durability   |   0.04516964      | 0.214194344    
+|  Height       |   0.02787830      | 0.06496256      
+|  Intelligence |   0.62906405      | 0.81891628 
+|  Durability   |   0.05010371      | 0.21935237   
 
+Here are the confidence intervals of the coefficients. It can be seen that the intervals of height, intelligence and durability are not include 0 and all greater than 0, which means that these three predictors are significant enough to retain. 
 
-+ From the Residuals vs Fitted plot, the residuals randomly scattered around the zero line without significant pattern, so it is plausible to make assumption that the residuals are normally distributed with mean zero and constant variance.  
-+ The normal Q-Q plot shows that the points follow the straight line very well suggesting that it is reasonable to assume the errors are normally distributed.  
-+ The Scale-Location plot displays that the points are randomly distributed around the red line, and the red line does not show an obvious trend, so the variance assumption is plausible.  
-+ Cook's distance plot show there are some outliers might influence the model. So here we rebuild the model excluded these 19 outliers.
+Thus, we get the final moedel as following,  
+$Y_{Combat}=0.046* X_{Height}+0.724* X_{Intelligence}+0.135* X_{Durability} + \epsilon$
+
+```{r final.result2, echo=FALSE}
+get_regression_table(model5, print = TRUE)
+```
 
 ## Model checking using other method of stepwise selection 
 
-  In the above disscussion, we use the backward stepwise regression to select the virables. Now we use another method of stepwise regresstion, which is combining forward and backward selection, to check whether the model from backward is the same as the model from combining forward and backward selection.
+  In the above discussion, we use the backward stepwise regression to select the variables. Now we use another method of stepwise regression, which is combining forward and backward selection, to check whether the model from backward is the same as the model from combining forward and backward selection.
 
 ```{r based on AIC, include=FALSE}
 model.selection <- ols_step_both_aic(model,details = TRUE)
@@ -246,7 +275,6 @@ model.selection_p[c("predictors","method","aic","rss","arsq","steps")]
 ```
 
   Finally combining the forward and backward model selection method, the final models are the same.
-
 
 # Further Task {#sec:Fur}
 
@@ -303,11 +331,18 @@ wilcox.test(marvel.Male,marvel.Female,alternative = "greater", mu=0)
 
 # Summary {#sec:Sum}
 
-  The final model is$Y_{Combat}=3.396 + 0.040* X_{Height}+0.696* X_{Intelligence}+0.130* X_{Durability} + \epsilon$. That means there are three statistical significant charactisitcs of hero (height, intelligence and durability), and these variables are a positive impact on the combat power. To be specific, when increasing one unit of Height value will increase the combat power of the hero by 0.04. When increasing one unit of Intelligence score will lead to increase the combat power of the hero by 0.696 and one unit of Durability score will cause increase by 0.13 of combat score. In Addition, The $R^2$ is 63.8%, it is already quite plausible to build a simple linear model here, 
+The final model is$Y_{Combat}=0.046* X_{Height}+0.724* X_{Intelligence}+0.135* X_{Durability} + \epsilon$. That means there are three statistical significant characteristics of hero (height, intelligence and durability), and these variables are a positive impact on the combat power. To be specific, when increasing one unit of Height value will increase the combat power of the hero by 0.046. When increasing one unit of Intelligence score will lead to increase the combat power of the hero by 0.724 and one unit of Durability score will cause increase by 0.135 of combat score. In Addition, The adjusted $R^2$ is 90.57%, it is already quite plausible to build a simple linear model here. Finally, using a non parametric hypothesis test finds that the combat of male hero is significantly greater than female.
 
 
 
-because the realistic data always have complex relationships between the explanatory variables. But if considering the multicollinearity, the model might be improved a lot, so maybe a general linear model is more suitable for the realistic data research.
+
+
+
+
+
+
+
+
 
 
 
