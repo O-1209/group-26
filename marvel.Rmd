@@ -5,6 +5,7 @@ date: "2 July 2021"
 output:
   pdf_document: default
   html_document: default
+fig_caption: yes
 ---
 
 ```{r setup, include=FALSE, echo = FALSE}
@@ -84,7 +85,7 @@ marvel[,-c(1,2)]%>%
   kable_styling(font_size = 10, latex_options = "hold_position")
 ```
 
-```{r boxplot1,echo = FALSE, out.width='50%',fig.align="center"}
+```{r boxplot1,echo = FALSE, out.width='50%',fig.align="center", fig.cap="\\label{fig:box} Boxplot of variables"}
 par(mfrow=c(1,2)) 
 boxplot(marvel$Height,main="Height",col=6, ylab = "Score")
 boxplot(marvel$Weight,main="Weight",col=7, ylab = "Score")
@@ -96,7 +97,7 @@ boxplot(marvel_ability,col=c(2:6), ylab = "Score")
 
 + Star plot of the powerful heroes 
 
-```{r starplot, echo=FALSE, out.width='80%',fig.align="center"}
+```{r starplot, echo=FALSE, out.width='80%',fig.align="center", fig.cap="\\label{fig:star} Star plot of the powerful heroes "}
 #Star plot
 marvel.Star <- read.csv('marvel.csv')
 marvel.Star.Names <- marvel.Star[,-c(1,3)] %>%
@@ -113,7 +114,7 @@ There is the star plot, which visually denotes the all-round data and indicators
 
 + Correlation plot of the corvarites
 
-```{r visualisation, echo=FALSE, eval=TRUE, out.width='80%',fig.align="center"}
+```{r visualisation, echo=FALSE, eval=TRUE, out.width='80%',fig.align="center", fig.cap= "\\label{fig:corr} Correlation plot of the corvarites "}
 cor <- cor(marvel[,-c(1,2)])
 corrplot(corr = cor , method ='number' ,type='upper',order='hclust') #cor matrix
 ```
@@ -244,7 +245,7 @@ summary(model5)
 confint(model5)
 ```
 
-```{r confidence interval,echo=FALSE,out.width='70%',fig.align="center"}
+```{r confidence interval,echo=FALSE,out.width='70%',fig.align="center", fig.cap= "\\label{fig:ci} model checking plots"}
 ggcoef(model5,vline_color = "red",
        vline_linetype = "solid",
        errorbar_color = "blue",
@@ -321,7 +322,7 @@ marvel %>%
   kable_styling(latex_options = "hold_position")
 ```
 
-```{r boxplots,echo=FALSE, out.width='70%',fig.align="center"}
+```{r boxplots,echo=FALSE, out.width='70%',fig.align="center",fig.cap= "\\label{fig:box2} The Combat Effectiveness of Super Heroes in Marvel by Gender"}
 ggplot(data = marvel, mapping = aes(x = Gender, y = Combat)) +
   geom_boxplot(fill = "steelblue") +
   labs(x = "Gender", y = "Combat",
