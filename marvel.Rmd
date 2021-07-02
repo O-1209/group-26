@@ -228,9 +228,11 @@ plot(model4)
 3. The Scale-Location plot displays that the points are randomly distributed around the red line, and the red line does not show an obvious trend, so the variance assumption is plausible.  
 4. The cook's distance plot shows that there are not obvious outliers that might influence the regression model.  
 
+\begin{center}
 ```{r final.result1, echo=FALSE}
 get_regression_table(model4, print = TRUE)
 ```
+\end{center}
 
 However,it can be seen that in the new model the p-value of the intercept is 0.07337, which is greater than 0.05, so we will exclude the intercept and refit the model.
 
@@ -260,9 +262,11 @@ Here are the confidence intervals of the coefficients. It can be seen that the i
 Thus, we get the final moedel as following,  
 $Y_{Combat}=0.046* X_{Height}+0.724* X_{Intelligence}+0.135* X_{Durability} + \epsilon$
 
+\begin{center}
 ```{r final.result2, echo=FALSE}
 get_regression_table(model5, print = TRUE)
 ```
+\end{center}
 
 ## Model checking using other method of stepwise selection 
 
