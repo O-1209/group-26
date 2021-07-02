@@ -24,13 +24,13 @@ library(corrplot)
 ```
 
 ```{r data, echo = FALSE, eval = TRUE}
-marvel <- read.csv('C:/Users/lc1998/Desktop/marvel(2).csv')
+marvel <- read.csv('marvel.csv')
 marvel <- marvel[-c(1,12,13)] #delete extra columns
 marvel <- na.omit(marvel)   #delete NA
 ```
 
 # Introduction {#sec:Intro}
-Marvel Comics have created many classic characters, how to evaluate the combat effectiveness of these super heroes? This poster will display graphical and numerical summaries to the heroes characteristic data, investigating the relationship between heroes combat and their basic features.
+Marvel Comics have created many classic characters, how to evaluate the combat effectiveness of these super heroes? This poster will display graphical and numerical summaries to the heroes characteristic data, investigating the relationship between heroes combat and their basic features.\cite{1}
 
 # Basic Analysis {#sec:Basic}
 
@@ -98,7 +98,7 @@ boxplot(marvel_ability,col=c(2:6), ylab = "Score")
 
 ```{r starplot, echo=FALSE, out.width='80%',fig.align="center"}
 #Star plot
-marvel.Star <- read.csv('C:/Users/lc1998/Desktop/marvel(2).csv')
+marvel.Star <- read.csv('marvel.csv')
 marvel.Star.Names <- marvel.Star[,-c(1,3)] %>%
   filter(Combat==101 | Combat==100) %>%
   select(Name)
@@ -333,6 +333,13 @@ wilcox.test(marvel.Male,marvel.Female,alternative = "greater", mu=0)
 
 The final model is$Y_{Combat}=0.046* X_{Height}+0.724* X_{Intelligence}+0.135* X_{Durability} + \epsilon$. That means there are three statistical significant characteristics of hero (height, intelligence and durability), and these variables are a positive impact on the combat power. To be specific, when increasing one unit of Height value will increase the combat power of the hero by 0.046. When increasing one unit of Intelligence score will lead to increase the combat power of the hero by 0.724 and one unit of Durability score will cause increase by 0.135 of combat score. In Addition, The adjusted $R^2$ is 90.57%, it is already quite plausible to build a simple linear model here. Finally, using a non parametric hypothesis test finds that the combat of male hero is significantly greater than female.
 
+
+\makeatletter\renewcommand\@biblabel[1]{${#1}$}\makeatother
+\begin{thebibliography}{100}
+\begin{small}
+\bibitem{1} https://www.kaggle.com/spatika/marvel-comics-characters-stats-and-powers/tasks
+\end{small}
+\end{thebibliography}
 
 
 
