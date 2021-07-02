@@ -30,7 +30,7 @@ marvel <- na.omit(marvel)   #delete NA
 ```
 
 # Introduction {#sec:Intro}
-Marvel Comics have created many classic characters, how to evaluate the combat effectiveness of these super heroes? This poster will display graphical and numerical summaries to the heroes characteristic data, investigating the relationship between heroes combat and their basic features.
+Marvel Comics have created many classic characters, but how do we evaluate the effectiveness in combat of these super heroes? This poster will display graphical and numerical summaries of the heroes' characteristic data, investigating the relationship between their combat score and their basic features.
 
 # Basic Analysis {#sec:Basic}
 
@@ -39,7 +39,7 @@ Marvel Comics have created many classic characters, how to evaluate the combat e
 + Variables explanation  
 
   **-Explanatory variable**  
-Gender(binary variable): female, male and unknown(as some of the heroes are not humanity)  
+Gender(binary variable): female, male and unknown(as some of the heroes are not human)  
 Height, weight: hero physical features   
 Intelligence, strength,	speed, durability, power: hero abilities  
 
@@ -48,8 +48,8 @@ Combat: hero fighting force
 
 + Missing and abnormal data procedure  
   
-  For the missing value, the character is excepted from analysis.  
-For the abnormal data, e.g. some unknown gender heroes or some heroes with negative value height and weight,i.e.-99, they are all remained in this analysis due to the particularity of the Marvel heroes in virtual movies and novels, they may not be 3D characters or might be from some specific ethnics, such as Mutant, Eternal.
+  For the missing value, the character is omitted from analysis.  
+For the abnormal data, e.g. some unknown gender heroes or some heroes with negative value height and weight, i.e.-99, they are all kept in this analysis due to the particularity of the Marvel heroes in virtual movies and novels, for example, they may not be 3D characters or might be from some specific species, such as Mutant, Eternal.
 
 ## Numerical and graphical Summaries
 
@@ -68,7 +68,7 @@ marvel%>%
 ```{r boxplot, echo = FALSE, out.width='50%',fig.align="center",fig.cap = "\\label{fig:box} boxplot of combat."}
 boxplot(marvel$Combat, main="Combat", ylab = "Score" )
 ```
-  Combining the summary statistics and the boxplot, the combat values are most between 10 and 70 with mean 47.5 and median 56.
+  Combining the summary statistics and the boxplot, the combat values are mostly between 10 and 70 with mean 47.5 and median 56.
 
 + Explanatory variables summaries
 
@@ -109,9 +109,9 @@ rownames(marvel.Star.Mtrix) <- marvel.Star.Names[,1]
 stars(marvel.Star.Mtrix,draw.segments = T,full = F,key.loc=c(8.5,1.5))
 ```
 
-There is the star plot, which visually denotes the all-round data and indicators of one specific hero in the marvel.The star plot displays these 14 heroes, with the highest combat score (101, Ares) and the combat score of the second-ranked 13 heroes (100, 13 heroes). In the plot, it is clear that Ares is the most powerful and unbeatable hero with omnipotence ability, and most of these heroes have a high score of intelligence OR speed. 
+This is the star plot, which visualises the all-round data and indicators of one specific hero in the marvel data set.The star plot displays these 14 heroes, with the highest combat score (101, Ares) and the combat score of the second-ranked 13 heroes (100, 13 heroes). In the plot, it is clear that Ares is the most powerful and unbeatable hero with omnipotent ability, and most of these heroes have a high score of intelligence OR speed. 
 
-+ Correlation plot of the corvarites
++ Correlation plot of the corvariates
 
 ```{r visualisation, echo=FALSE, eval=TRUE, out.width='80%',fig.align="center"}
 cor <- cor(marvel[,-c(1,2)])
@@ -123,7 +123,7 @@ cor <- cor(marvel[,-c(1,2)])
 corrplot(corr = cor , method ='circle' ,type='upper',order='hclust') #cor matrix, this plot is used into poster.
 ```
 
- From the correlation plot, 7 explanatory variables have a strong relationship with response variables, thus a linear regression model will be build and explore the confidence intervals of the parameters. Also, there is another problem which is found from the correlation. we can see that intelligence, durability and power have the most significance positive correlations with combat, 0.76, 0.68 and 0.66 respectively. Thus, it is reasonable to consider the multicollinearity because of the strong positive correlations between the explanatory variables.
+ From the correlation plot, 7 explanatory variables have a strong relationship with the response variable, thus a linear regression model will be built and we will explore the confidence intervals of the parameters. Also, there is another problem which we can see from the correlation plot. We can see that intelligence, durability and power have the most significance positive correlations with combat, 0.76, 0.68 and 0.66 respectively. Thus, it is reasonable to consider that there is multicollinearity because of the strong positive correlations between the explanatory variables.
 
 # Model Investigation
 
@@ -140,13 +140,12 @@ model<- lm(Combat ~ Gender + Height + Weight + Intelligence + Strength + Speed +
 get_regression_table(model, print = TRUE)
 ```
   
-From the regression table, we noticed that half of the parameters in the full model are not
-
-significant due to the multicollinearity, thus the stepwise regression is used to address this problem. 
+From the regression table, we notice that half of the parameters in the full model are not
+significant due to the multicollinearity, thus stepwise regression is used to address this problem. 
 
 ## Stepwise regression 
 
-The following is the stepwise regession, which is used to select variables 
+The following code shows the stepwise regession, which is used to select which variables will be kept in the model.
 
 ```{r stepwise regression,include=FALSE, message=FALSE, warning=FALSE}
 library(knitr)
@@ -160,7 +159,7 @@ backwardmodel.1 <- step(model,method = "backward")   #using the backward method
 get_regression_table(backwardmodel.1, print = TRUE)
 ```
 
-  From the stepwise regression method for model selection, the original model has dropped 3 predictors after using AIC criteria. Only height, weight, intelligence, speed and durability are remained in the model. Then we use the p-value to do further model selection.
+  From the stepwise regression method for model selection, using AIC as out criterion, 3 predictors are dropped from the model. Only height, weight, intelligence, speed and durability are kept in the model. We then use the p-value to do further model selection.
 
 ```{r p-value,include=FALSE}
 #reduced model
@@ -179,7 +178,8 @@ model3 <- lm(formula = Combat ~ Height + Intelligence +
 summary(model3)
 ```
 
-  This selection procedure is to repeat dropping the non significance variable (i.e. p-value is greater than 0.05) one by one, then generate a new model. Finally we got the model as following.
+This selection procedure repeatedly drops the least significant variable (i.e. p-value is greater than 0.05) one by one, then generates a new model,
+until all parameters are significant. Finally we got the model as following.
 
 $Y_{Combat}=\alpha+ \beta_1* X_{Height}+\beta_2* X_{Intelligence}+\beta_3* X_{Durability}$  
 
@@ -187,7 +187,7 @@ $Y_{Combat}=\alpha+ \beta_1* X_{Height}+\beta_2* X_{Intelligence}+\beta_3* X_{Du
 get_regression_table(model3, print = TRUE)
 ```
 
-  Here we end up with a model with three variables: height, intelligence and durability. And $R^2$ value is 63.8% in the new model, which indicates that the new model is a plausible fit.
+  Here we end up with a model with three explanatory variables: height, intelligence and durability. The $R^2$ value is 63.8% in the new model, which indicates that the new model is a plausible fit.
 
 ## Checking assumption
 
@@ -203,7 +203,7 @@ model3_data <- marvel %>%
   mutate('cook_distance' = cook) %>%
   filter(cook_distance <= 4/n)
 ```
-From the fourth figure of the model check above, we discover that there are some influential points (Abnormalities of Cook's value), so we delete these influential observations from the original data set.Then, we will refit the data in the model excluding some dependent variables to estimate the parameters of the model. 
+From the Figure 4, which displays our plots for checking residuals, we discover that there are some influential points (Abnormalities of Cook's value), so we delete these influential observations from the original data set. Then, we refit the model excluding using the same significant explanatory variables to estimate the parameters of the model. 
 
 + Checking model assumption
 ```{r final model analysis step1, include=FALSE}
@@ -217,7 +217,7 @@ par(mfrow=c(2,2))
 plot(model4) 
 ```
 
-1. From the Residuals vs Fitted plot, the residuals randomly scattered around the zero line without significant pattern, so it is plausible to make assumption that the residuals are normally distributed with mean zero and constant variance.  
+1. From the Residuals vs Fitted plot, the residuals are randomly scattered around the zero line with no significant pattern, so it is plausible to make the assumption that the residuals are normally distributed with mean zero and constant variance.  
 2. The normal Q-Q plot shows that the points follow the straight line very well suggesting that it is reasonable to assume the errors are normally distributed.  
 3. The Scale-Location plot displays that the points are randomly distributed around the red line, and the red line does not show an obvious trend, so the variance assumption is plausible.  
 4. The cook's distance plot shows that there are not obvious outliers that might influence the regression model.  
@@ -226,7 +226,7 @@ plot(model4)
 get_regression_table(model4, print = TRUE)
 ```
 
-However,it can be seen that in the new model the p-value of the intercept is 0.07337, which is greater than 0.05, so we will exclude the intercept and refit the model.
+However, it can be seen that in the new model the p-value of the intercept is 0.07337, which is greater than 0.05, so we will exclude the intercept and refit the model.
 
 + Checking point estimation
 
@@ -260,7 +260,7 @@ get_regression_table(model5, print = TRUE)
 
 ## Model checking using other method of stepwise selection 
 
-  In the above discussion, we use the backward stepwise regression to select the variables. Now we use another method of stepwise regression, which is combining forward and backward selection, to check whether the model from backward is the same as the model from combining forward and backward selection.
+  In the above discussion, we use backward stepwise regression to select the variables. Now we use another method of stepwise regression, which is combining forward and backward selection, to check whether the model from backward is the same as the model from combining forward and backward selection.
 
 ```{r based on AIC, include=FALSE}
 model.selection <- ols_step_both_aic(model,details = TRUE)
@@ -278,7 +278,7 @@ model.selection_p[c("predictors","method","aic","rss","arsq","steps")]
 
 # Further Task {#sec:Fur}
 
-  Is there any difference between females combat and males combat? We will investigate this question by boxplot and hypothesis test.
+  Is there any difference between females combat and males combat? We will investigate this question by via a boxplot and hypothesis test.
 
 ```{r male data,include=FALSE}
 marvel.Male <- marvel %>%
@@ -327,11 +327,11 @@ ggplot(data = marvel, mapping = aes(x = Gender, y = Combat)) +
 wilcox.test(marvel.Male,marvel.Female,alternative = "greater", mu=0)
 ```
 
-  The results in R provided a p-value of 0.009957 and since this is < 0.05 we reject $H_0$. Therefore, there is evidence that the preferred mean combat of male heroes is greater than female mean combat.
+  The results in R provided a p-value of 0.009957 and since this is < 0.05 we reject $H_0$. Therefore, there is evidence that the mean combat score of male heroes is greater than that of female heroes.
 
 # Summary {#sec:Sum}
 
-The final model is$Y_{Combat}=0.046* X_{Height}+0.724* X_{Intelligence}+0.135* X_{Durability} + \epsilon$. That means there are three statistical significant characteristics of hero (height, intelligence and durability), and these variables are a positive impact on the combat power. To be specific, when increasing one unit of Height value will increase the combat power of the hero by 0.046. When increasing one unit of Intelligence score will lead to increase the combat power of the hero by 0.724 and one unit of Durability score will cause increase by 0.135 of combat score. In Addition, The adjusted $R^2$ is 90.57%, it is already quite plausible to build a simple linear model here. Finally, using a non parametric hypothesis test finds that the combat of male hero is significantly greater than female.
+The final model is$Y_{Combat}=0.046* X_{Height}+0.724* X_{Intelligence}+0.135* X_{Durability} + \epsilon$. That means there are three statistical significant characteristics, which are height, intelligence and durability, and these variables have a positive effect on the combat power. To be specific, when increasing height by one unit, combat increases by 0.046. When increasing intelligence score by one unit, the combat score increases by 0.724, and increasing durability by one unit increases combat score by 0.135. In Addition, the adjusted $R^2$ is 90.57%, so it is already quite plausible to build a simple linear model here. Finally, a non parametric hypothesis test finds that the combat score of male marvel heroes is significantly greater than that of females.
 
 
 
